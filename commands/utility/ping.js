@@ -7,13 +7,15 @@ export default {
         .setDescription('Kiểm tra độ trễ của bot'),
 
     async execute(interaction) {
+        const startTime = Date.now();
+        
         // Tính latency
-        const reply = await interaction.reply({ 
+        await interaction.reply({ 
             content: '🏓 Đang kiểm tra...',
             withResponse: true
         });
         
-        const roundtripLatency = reply.createdTimestamp - interaction.createdTimestamp;
+        const roundtripLatency = Date.now() - startTime;
         const websocketLatency = interaction.client.ws.ping;
 
         // Format websocket latency (nếu -1 thì đang chờ heartbeat)
