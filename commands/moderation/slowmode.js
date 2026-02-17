@@ -24,19 +24,20 @@ export default {
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
 
     async execute(interaction) {
+        // Defer immediately to prevent timeout
+        await interaction.deferReply({ flags: 64 });
+
         // Kiểm tra quyền của user
         if (!hasPermission(interaction.member, PermissionFlagsBits.ManageChannels)) {
-            return interaction.reply({
-                embeds: [errorEmbed('Không có quyền', 'Bạn không có quyền quản lý kênh!')],
-                ephemeral: true
+            return interaction.editReply({
+                embeds: [errorEmbed('Không có quyền', 'Bạn không có quyền quản lý kênh!')]
             });
         }
 
         // Kiểm tra quyền của bot
         if (!botHasPermission(interaction.guild, PermissionFlagsBits.ManageChannels)) {
-            return interaction.reply({
-                embeds: [errorEmbed('Bot không có quyền', 'Bot không có quyền quản lý kênh!')],
-                ephemeral: true
+            return interaction.editReply({
+                embeds: [errorEmbed('Bot không có quyền', 'Bot không có quyền quản lý kênh!')]
             });
         }
 
@@ -45,9 +46,8 @@ export default {
 
         // Kiểm tra xem channel có phải là text channel không
         if (channel.type !== ChannelType.GuildText) {
-            return interaction.reply({
-                embeds: [errorEmbed('Lỗi', 'Chỉ có thể thiết lập slowmode cho text channel!')],
-                ephemeral: true
+            return interaction.editReply({
+                embeds: [errorEmbed('Lỗi', 'Chỉ có thể thiết lập slowmode cho text channel!')]
             });
         }
 
@@ -55,7 +55,7 @@ export default {
             await channel.setRateLimitPerUser(duration);
 
             if (duration === 0) {
-                await interaction.reply({
+                await interaction.editReply({
                     embeds: [successEmbed(
                         'Đã tắt slowmode',
                         `**Kênh:** ${channel}\nSlowmode đã được tắt.`
@@ -74,7 +74,7 @@ export default {
                     timeString = minutes > 0 ? `${hours} giờ ${minutes} phút` : `${hours} giờ`;
                 }
 
-                await interaction.reply({
+                await interaction.editReply({
                     embeds: [successEmbed(
                         'Đã thiết lập slowmode',
                         `**Kênh:** ${channel}\n**Thời gian chờ:** ${timeString}\n\nThành viên phải chờ ${timeString} giữa các tin nhắn.`
@@ -83,9 +83,8 @@ export default {
             }
         } catch (error) {
             console.error('Lỗi khi thiết lập slowmode:', error);
-            await interaction.reply({
-                embeds: [errorEmbed('Lỗi', 'Đã xảy ra lỗi khi thiết lập slowmode!')],
-                ephemeral: true
+            await interaction.editReply({
+                embeds: [errorEmbed('Lỗi', 'Đã xảy ra lỗi khi thiết lập slowmode!')]
             });
         }
     }

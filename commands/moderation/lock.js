@@ -22,19 +22,20 @@ export default {
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
 
     async execute(interaction) {
+        // Defer immediately to prevent timeout
+        await interaction.deferReply({ flags: 64 });
+
         // Kiểm tra quyền của user
         if (!hasPermission(interaction.member, PermissionFlagsBits.ManageChannels)) {
-            return interaction.reply({
-                embeds: [errorEmbed('Không có quyền', 'Bạn không có quyền quản lý kênh!')],
-                ephemeral: true
+            return interaction.editReply({
+                embeds: [errorEmbed('Không có quyền', 'Bạn không có quyền quản lý kênh!')]
             });
         }
 
         // Kiểm tra quyền của bot
         if (!botHasPermission(interaction.guild, PermissionFlagsBits.ManageChannels)) {
-            return interaction.reply({
-                embeds: [errorEmbed('Bot không có quyền', 'Bot không có quyền quản lý kênh!')],
-                ephemeral: true
+            return interaction.editReply({
+                embeds: [errorEmbed('Bot không có quyền', 'Bot không có quyền quản lý kênh!')]
             });
         }
 
@@ -43,9 +44,8 @@ export default {
 
         // Kiểm tra xem channel có phải là text channel không
         if (channel.type !== ChannelType.GuildText) {
-            return interaction.reply({
-                embeds: [errorEmbed('Lỗi', 'Chỉ có thể khóa text channel!')],
-                ephemeral: true
+            return interaction.editReply({
+                embeds: [errorEmbed('Lỗi', 'Chỉ có thể khóa text channel!')]
             });
         }
 
@@ -63,7 +63,7 @@ export default {
                     SendMessages: null
                 });
 
-                await interaction.reply({
+                await interaction.editReply({
                     embeds: [successEmbed(
                         '🔓 Đã mở khóa kênh',
                         `**Kênh:** ${channel}\n**Lý do:** ${reason}\n**Bởi:** ${interaction.user.tag}\n\nThành viên có thể gửi tin nhắn trong kênh này.`
@@ -75,7 +75,7 @@ export default {
                     SendMessages: false
                 });
 
-                await interaction.reply({
+                await interaction.editReply({
                     embeds: [errorEmbed(
                         '🔒 Đã khóa kênh',
                         `**Kênh:** ${channel}\n**Lý do:** ${reason}\n**Bởi:** ${interaction.user.tag}\n\nChỉ moderators mới có thể gửi tin nhắn trong kênh này.`
@@ -84,9 +84,8 @@ export default {
             }
         } catch (error) {
             console.error('Lỗi khi khóa/mở kênh:', error);
-            await interaction.reply({
-                embeds: [errorEmbed('Lỗi', 'Đã xảy ra lỗi khi khóa/mở kênh!')],
-                ephemeral: true
+            await interaction.editReply({
+                embeds: [errorEmbed('Lỗi', 'Đã xảy ra lỗi khi khóa/mở kênh!')]
             });
         }
     }

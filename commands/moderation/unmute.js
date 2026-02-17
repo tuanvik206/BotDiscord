@@ -21,19 +21,20 @@ export default {
         .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
 
     async execute(interaction) {
+        // Defer immediately to prevent timeout
+        await interaction.deferReply({ flags: 64 });
+
         // Kiểm tra quyền của user
         if (!hasPermission(interaction.member, PermissionFlagsBits.ModerateMembers)) {
-            return interaction.reply({
-                embeds: [errorEmbed('Không có quyền', 'Bạn không có quyền unmute thành viên!')],
-                ephemeral: true
+            return interaction.editReply({
+                embeds: [errorEmbed('Không có quyền', 'Bạn không có quyền unmute thành viên!')]
             });
         }
 
         // Kiểm tra quyền của bot
         if (!botHasPermission(interaction.guild, PermissionFlagsBits.ModerateMembers)) {
-            return interaction.reply({
-                embeds: [errorEmbed('Bot không có quyền', 'Bot không có quyền unmute thành viên!')],
-                ephemeral: true
+            return interaction.editReply({
+                embeds: [errorEmbed('Bot không có quyền', 'Bot không có quyền unmute thành viên!')]
             });
         }
 
@@ -45,26 +46,23 @@ export default {
         try {
             targetMember = await interaction.guild.members.fetch(targetUser.id);
         } catch (error) {
-            return interaction.reply({
-                embeds: [errorEmbed('Lỗi', 'Không thể tìm thấy thành viên này!')],
-                ephemeral: true
+            return interaction.editReply({
+                embeds: [errorEmbed('Lỗi', 'Không thể tìm thấy thành viên này!')]
             });
         }
 
         // Kiểm tra xem user có đang bị timeout không
         if (!targetMember.communicationDisabledUntil) {
-            return interaction.reply({
-                embeds: [errorEmbed('Không bị mute', 'Người dùng này không bị mute!')],
-                ephemeral: true
+            return interaction.editReply({
+                embeds: [errorEmbed('Không bị mute', 'Người dùng này không bị mute!')]
             });
         }
 
         // Kiểm tra có thể moderate không
         const moderateCheck = canModerate(interaction.member, targetMember);
         if (!moderateCheck.success) {
-            return interaction.reply({
-                embeds: [errorEmbed('Không thể unmute', moderateCheck.reason)],
-                ephemeral: true
+            return interaction.editReply({
+                embeds: [errorEmbed('Không thể unmute', moderateCheck.reason)]
             });
         }
 
@@ -84,7 +82,7 @@ export default {
         try {
             await targetMember.timeout(null, `${reason} | Bởi: ${interaction.user.tag}`);
 
-            await interaction.reply({
+            await interaction.editReply({
                 embeds: [successEmbed(
                     'Đã unmute thành viên',
                     `**Người được unmute:** ${targetUser.tag}\n**Lý do:** ${reason}`
@@ -92,9 +90,8 @@ export default {
             });
         } catch (error) {
             console.error('Lỗi khi unmute:', error);
-            await interaction.reply({
-                embeds: [errorEmbed('Lỗi', 'Đã xảy ra lỗi khi unmute thành viên!')],
-                ephemeral: true
+            await interaction.editReply({
+                embeds: [errorEmbed('Lỗi', 'Đã xảy ra lỗi khi unmute thành viên!')]
             });
         }
     }

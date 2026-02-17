@@ -21,19 +21,20 @@ export default {
         .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
 
     async execute(interaction) {
+        // Defer immediately to prevent timeout
+        await interaction.deferReply({ flags: 64 });
+
         // Kiểm tra quyền của user
         if (!hasPermission(interaction.member, PermissionFlagsBits.BanMembers)) {
-            return interaction.reply({
-                embeds: [errorEmbed('Không có quyền', 'Bạn không có quyền unban thành viên!')],
-                ephemeral: true
+            return interaction.editReply({
+                embeds: [errorEmbed('Không có quyền', 'Bạn không có quyền unban thành viên!')]
             });
         }
 
         // Kiểm tra quyền của bot
         if (!botHasPermission(interaction.guild, PermissionFlagsBits.BanMembers)) {
-            return interaction.reply({
-                embeds: [errorEmbed('Bot không có quyền', 'Bot không có quyền unban thành viên!')],
-                ephemeral: true
+            return interaction.editReply({
+                embeds: [errorEmbed('Bot không có quyền', 'Bot không có quyền unban thành viên!')]
             });
         }
 
@@ -42,9 +43,8 @@ export default {
 
         // Kiểm tra ID có hợp lệ không
         if (!/^\d{17,19}$/.test(userId)) {
-            return interaction.reply({
-                embeds: [errorEmbed('ID không hợp lệ', 'Vui lòng nhập một Discord User ID hợp lệ!')],
-                ephemeral: true
+            return interaction.editReply({
+                embeds: [errorEmbed('ID không hợp lệ', 'Vui lòng nhập một Discord User ID hợp lệ!')]
             });
         }
 
@@ -54,16 +54,15 @@ export default {
             const bannedUser = bans.get(userId);
 
             if (!bannedUser) {
-                return interaction.reply({
-                    embeds: [errorEmbed('Không tìm thấy', 'Người dùng này không bị ban trong server!')],
-                    ephemeral: true
+                return interaction.editReply({
+                    embeds: [errorEmbed('Không tìm thấy', 'Người dùng này không bị ban trong server!')]
                 });
             }
 
             // Thực hiện unban
             await interaction.guild.members.unban(userId, `${reason} | Bởi: ${interaction.user.tag}`);
 
-            await interaction.reply({
+            await interaction.editReply({
                 embeds: [successEmbed(
                     'Đã unban người dùng',
                     `**Người được unban:** ${bannedUser.user.tag} (${userId})\n**Lý do:** ${reason}`
@@ -71,9 +70,8 @@ export default {
             });
         } catch (error) {
             console.error('Lỗi khi unban:', error);
-            await interaction.reply({
-                embeds: [errorEmbed('Lỗi', 'Đã xảy ra lỗi khi unban người dùng!')],
-                ephemeral: true
+            await interaction.editReply({
+                embeds: [errorEmbed('Lỗi', 'Đã xảy ra lỗi khi unban người dùng!')]
             });
         }
     }
