@@ -44,8 +44,9 @@ export default {
         const targetUser = interaction.options.getUser('user');
 
         try {
-            // Fetch messages
-            const messages = await interaction.channel.messages.fetch({ limit: amount + 1 }); // +1 để bỏ qua lệnh
+            // Fetch messages (Discord limit is 100)
+            const fetchLimit = Math.min(amount, 100);
+            const messages = await interaction.channel.messages.fetch({ limit: fetchLimit });
 
             // Lọc tin nhắn (bỏ qua tin nhắn quá 14 ngày vì Discord API không cho phép xóa)
             let messagesToDelete = messages.filter(msg => {
