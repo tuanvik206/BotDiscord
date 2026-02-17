@@ -11,8 +11,18 @@ if (!supabaseUrl || !supabaseKey) {
     throw new Error('❌ Missing Supabase credentials! Check .env file.');
 }
 
-// Create Supabase client
-export const supabase = createClient(supabaseUrl, supabaseKey);
+// Create Supabase client with optimized settings
+export const supabase = createClient(supabaseUrl, supabaseKey, {
+    db: {
+        schema: 'public'
+    },
+    auth: {
+        persistSession: false // Bot doesn't need session persistence
+    },
+    global: {
+        headers: { 'x-application-name': 'discord-bot' }
+    }
+});
 
 // Test connection
 export async function testConnection() {

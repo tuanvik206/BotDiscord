@@ -131,10 +131,26 @@ client.on(Events.InteractionCreate, async (interaction) => {
 });
 
 // Auto-moderation
-client.on('messageCreate', async (message) => {
-    // Import automod handler
-    const { runAutomod } = await import('./utils/automod/automodHandler.js');
-    await runAutomod(message);
+client.on(Events.MessageCreate, async (message) => {
+    if (message.author.bot) return;
+    
+    const { handleAutomod } = await import('./utils/automod/automodHandler.js');
+    await handleAutomod(message);
+});
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+    console.log('\n🛑 Shutting down gracefully...');
+    client.destroy();
+    console.log('✅ Bot disconnected');
+    process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+    console.log('\n🛑 Received SIGTERM, shutting down...');
+    client.destroy();
+    console.log('✅ Bot disconnected');
+    process.exit(0);
 });
 
 // Error handling

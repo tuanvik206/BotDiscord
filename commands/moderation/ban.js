@@ -29,19 +29,20 @@ export default {
         .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
 
     async execute(interaction) {
+        // Defer immediately to prevent timeout
+        await interaction.deferReply({ flags: 64 });
+
         // Kiểm tra quyền của user
         if (!hasPermission(interaction.member, PermissionFlagsBits.BanMembers)) {
-            return interaction.reply({
-                embeds: [errorEmbed('Không có quyền', 'Bạn không có quyền ban thành viên!')],
-                ephemeral: true
+            return interaction.editReply({
+                embeds: [errorEmbed('Không có quyền', 'Bạn không có quyền ban thành viên!')]
             });
         }
 
         // Kiểm tra quyền của bot
         if (!botHasPermission(interaction.guild, PermissionFlagsBits.BanMembers)) {
-            return interaction.reply({
-                embeds: [errorEmbed('Bot không có quyền', 'Bot không có quyền ban thành viên!')],
-                ephemeral: true
+            return interaction.editReply({
+                embeds: [errorEmbed('Bot không có quyền', 'Bot không có quyền ban thành viên!')]
             });
         }
 
@@ -54,18 +55,16 @@ export default {
         try {
             targetMember = await interaction.guild.members.fetch(targetUser.id);
         } catch (error) {
-            return interaction.reply({
-                embeds: [errorEmbed('Lỗi', 'Không thể tìm thấy thành viên này!')],
-                ephemeral: true
+            return interaction.editReply({
+                embeds: [errorEmbed('Lỗi', 'Không thể tìm thấy thành viên này!')]
             });
         }
 
         // Kiểm tra có thể moderate không
         const moderateCheck = canModerate(interaction.member, targetMember);
         if (!moderateCheck.success) {
-            return interaction.reply({
-                embeds: [errorEmbed('Không thể ban', moderateCheck.reason)],
-                ephemeral: true
+            return interaction.editReply({
+                embeds: [errorEmbed('Không thể ban', moderateCheck.reason)]
             });
         }
 
@@ -88,7 +87,7 @@ export default {
                 reason: `${reason} | Bởi: ${interaction.user.tag}`
             });
 
-            await interaction.reply({
+            await interaction.editReply({
                 embeds: [successEmbed(
                     'Đã ban thành viên',
                     `**Người bị ban:** ${targetUser.tag}\n**Lý do:** ${reason}\n**Tin nhắn đã xóa:** ${deleteDays} ngày`
@@ -96,9 +95,8 @@ export default {
             });
         } catch (error) {
             console.error('Lỗi khi ban:', error);
-            await interaction.reply({
-                embeds: [errorEmbed('Lỗi', 'Đã xảy ra lỗi khi ban thành viên!')],
-                ephemeral: true
+            await interaction.editReply({
+                embeds: [errorEmbed('Lỗi', 'Đã xảy ra lỗi khi ban thành viên!')]
             });
         }
     }
