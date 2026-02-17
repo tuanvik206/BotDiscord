@@ -1,0 +1,25 @@
+{
+  "name": "botdiscord",
+  "version": "1.0.0",
+  "description": "Discord Bot quản lý lớp học với các lệnh moderation",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "deploy": "node deploy-commands.js",
+    "dev": "node --watch index.js"
+  },
+  "keywords": [
+    "discord",
+    "bot",
+    "moderation",
+    "education"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.95.3",
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.4.1"
+  }
+}
