@@ -8,12 +8,12 @@ export default {
 
     async execute(interaction) {
         // Tính latency
-        const sent = await interaction.reply({ 
-            content: '🏓 Đang kiểm tra...', 
-            fetchReply: true 
+        const reply = await interaction.reply({ 
+            content: '🏓 Đang kiểm tra...',
+            withResponse: true
         });
         
-        const roundtripLatency = sent.createdTimestamp - interaction.createdTimestamp;
+        const roundtripLatency = reply.createdTimestamp - interaction.createdTimestamp;
         const websocketLatency = interaction.client.ws.ping;
 
         // Format websocket latency (nếu -1 thì đang chờ heartbeat)
