@@ -161,8 +161,32 @@ export default {
 
                     // Tạo file Excel
                     const workbook = new ExcelJS.Workbook();
-                    const worksheet = workbook.addWorksheet('Poll Results');
+                    
+                    // Sheet 1: Tổng hợp (Summary)
+                    const locationSheet = workbook.addWorksheet('Thống kê');
+                    locationSheet.columns = [
+                        { header: 'Lựa chọn', key: 'option', width: 40 },
+                        { header: 'Số lượng vote', key: 'count', width: 15 },
+                        { header: 'Tỷ lệ', key: 'percent', width: 15 }
+                    ];
 
+                    const totalVotes = userVotes.size;
+                    options.forEach((opt, index) => {
+                        const count = Array.from(userVotes.values()).filter(v => v.optionIndex === index).length;
+                        const percent = totalVotes === 0 ? 0 : ((count / totalVotes) * 100).toFixed(1) + '%';
+                        
+                        locationSheet.addRow({
+                            option: opt,
+                            count: count,
+                            percent: percent
+                        });
+                    });
+
+                    locationSheet.addRow({}); // Dòng trống
+                    locationSheet.addRow({ option: 'Tổng cộng', count: totalVotes });
+
+                    // Sheet 2: Chi tiết (Details)
+                    const worksheet = workbook.addWorksheet('Chi tiết người vote');
                     worksheet.columns = [
                         { header: 'User ID', key: 'id', width: 20 },
                         { header: 'User Tag', key: 'tag', width: 30 },
