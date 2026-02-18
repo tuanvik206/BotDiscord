@@ -149,6 +149,17 @@ MIT License - Tự do sử dụng và chỉnh sửa
 | `/help` | Hiển thị danh sách lệnh và hướng dẫn |
 
 
+### 📚 Study Commands
+
+| Lệnh | Mô tả |
+|------|-------|
+| `/docs add` | Thêm tài liệu mới vào kho lưu trữ |
+| `/docs search` | Tìm kiếm tài liệu theo tên |
+| `/docs list` | Xem danh sách tài liệu theo môn học |
+| `/docs delete` | Xóa tài liệu (yêu cầu quyền Manage Messages) |
+| `/study now` | Gửi lời nhắc động viên mọi người học bài |
+| `/study timer` | Đặt hẹn giờ học (Pomodoro) |
+
 ## 🚀 Cài Đặt
 
 ### 1. Yêu Cầu
