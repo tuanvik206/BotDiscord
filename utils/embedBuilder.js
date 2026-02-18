@@ -3,35 +3,40 @@ import { EmbedBuilder } from 'discord.js';
 /**
  * Màu sắc chuyên nghiệp cho embeds
  */
+/**
+ * Màu sắc chuyên nghiệp cho embeds (Premium Palette)
+ */
 const COLORS = {
-    SUCCESS: 0x00D26A,    // Green - Màu xanh lá tươi
-    ERROR: 0xF23F43,      // Red - Màu đỏ rực
-    WARNING: 0xF0B232,    // Yellow/Orange - Màu vàng cam
-    INFO: 0x5865F2,       // Blurple - Màu tím Discord
-    PRIMARY: 0x5865F2,    // Primary Discord color
-    SECONDARY: 0x99AAB5,  // Gray
-    PREMIUM: 0xFFD700     // Gold
+    SUCCESS: 0x2ECC71,    // Emerald Green
+    ERROR: 0xE74C3C,      // Alizarin Red
+    WARNING: 0xF1C40F,    // Sunflower Yellow
+    INFO: 0x3498DB,       // Peter River Blue
+    PRIMARY: 0x9B59B6,    // Amethyst Purple (Chủ đạo)
+    SECONDARY: 0x95A5A6,  // Concrete Gray
+    PREMIUM: 0xF1C40F,    // Gold
+    POLL: 0xFF7675        // Pink for Polls
 };
 
 /**
- * Icons cho các loại embed
+ * Icons cho các loại embed (Động & Tĩnh)
  */
 const ICONS = {
     SUCCESS: '✅',
-    ERROR: '❌',
+    ERROR: '🚫',
     WARNING: '⚠️',
     INFO: 'ℹ️',
     MODERATION: '🛡️',
-    PROJECT: '📁',
-    HELP: '❓',
+    PROJECT: '📂',
+    HELP: '🆘',
     SETTINGS: '⚙️',
     STATS: '📊',
     USER: '👤',
-    CHANNEL: '💬',
+    CHANNEL: '📢',
     ROLE: '🎭',
     TIME: '⏰',
     LOCK: '🔒',
-    UNLOCK: '🔓'
+    UNLOCK: '🔓',
+    POLL: '📊'
 };
 
 /**
