@@ -138,7 +138,7 @@ function getCommandDetails(commandName) {
             permission: 'MANAGE_CHANNELS'
         },
         poll: {
-            description: 'Tạo cuộc bình chọn với các lựa chọn. Bot sẽ tự động thả reaction số.',
+            description: 'Tạo cuộc bình chọn với các nút bấm trực quan. Hỗ trợ xem người vote và kết quả real-time.',
             syntax: '`/poll question:"Câu hỏi" options:"Lựa chọn 1, Lựa chọn 2..."`',
             example: '`/poll question:"Học bù vào thứ mấy?" options:"Thứ 7, Chủ Nhật, Thứ 2"`',
             permission: 'MỌI NGƯỜI'
