@@ -60,8 +60,18 @@ export default {
         )
         .addSubcommand(subcommand =>
             subcommand
-                .setName('whitelist')
-                .setDescription('Xem danh sách domains được phép')
+                .setName('link_settings')
+                .setDescription('Cấu hình bộ lọc link')
+                .addStringOption(option =>
+                    option
+                        .setName('mode')
+                        .setDescription('Chế độ chặn')
+                        .setRequired(true)
+                        .addChoices(
+                            { name: '🔒 Chặn tất cả (Chỉ cho phép Whitelist)', value: 'strict' },
+                            { name: '🔓 Chỉ chặn Blacklist (Mặc định)', value: 'basic' }
+                        )
+                )
         )
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
@@ -86,9 +96,39 @@ export default {
             await handleReset(interaction);
         } else if (subcommand === 'whitelist') {
             await handleWhitelist(interaction);
+        } else if (subcommand === 'link_settings') {
+            await handleLinkSettings(interaction);
         }
     }
 };
+
+// ... (Other handlers remain same)
+
+async function handleLinkSettings(interaction) {
+    const mode = interaction.options.getString('mode');
+    const config = await getConfig(interaction.guild.id);
+
+    // Update config
+    config.links.blockAll = (mode === 'strict');
+    
+    // Ensure allowWhitelist is true if strict mode
+    if (mode === 'strict') {
+        config.links.allowWhitelist = true;
+    }
+
+    await updateConfig(interaction.guild.id, config);
+
+    const statusText = mode === 'strict' 
+        ? '🔒 **Strict Mode** (Chặn tất cả link ngoài Whitelist)' 
+        : '🔓 **Basic Mode** (Chỉ chặn link trong Blacklist)';
+
+    await interaction.reply({
+        embeds: [successEmbed(
+            'Cập nhật cấu hình Link',
+            `Đã chuyển sang chế độ: ${statusText}`
+        )]
+    });
+}
 
 async function handleStatus(interaction) {
     const config = await getConfig(interaction.guild.id);

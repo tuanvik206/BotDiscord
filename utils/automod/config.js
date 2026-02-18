@@ -17,7 +17,7 @@ export const DEFAULT_CONFIG = {
     // Link Filter
     links: {
         enabled: true,
-        blockAll: false,          // Chặn tất cả links (false = chỉ chặn blacklist)
+        blockAll: true,          // Chặn tất cả links (true = chỉ whitelist được đi)
         allowWhitelist: true,     // Cho phép whitelist
         blockInvites: true,       // Chặn Discord invites
         blockShorteners: true,    // Chặn link rút gọn
