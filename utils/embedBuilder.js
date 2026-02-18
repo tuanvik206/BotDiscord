@@ -42,13 +42,16 @@ const ICONS = {
 /**
  * Tạo base embed với styling chuyên nghiệp
  */
+/**
+ * Tạo base embed với styling chuyên nghiệp
+ */
 function createBaseEmbed(color) {
     return new EmbedBuilder()
         .setColor(color)
         .setTimestamp()
         .setFooter({ 
             text: 'Discord Bot • Quản Lý Lớp Học',
-            iconURL: 'https://cdn.discordapp.com/emojis/1234567890.png' // Có thể thay bằng logo bot
+            iconURL: 'https://cdn-icons-png.flaticon.com/512/2620/2620549.png' // Icon Bot mặc định
         });
 }
 
@@ -58,7 +61,9 @@ function createBaseEmbed(color) {
 export function successEmbed(title, description, fields = null) {
     const embed = createBaseEmbed(COLORS.SUCCESS)
         .setTitle(`${ICONS.SUCCESS} ${title}`)
-        .setDescription(description);
+        .setDescription(`> ${description}`) // Quote style
+        .setThumbnail('https://cdn-icons-png.flaticon.com/512/148/148767.png') // Checkmark 3D
+        .setAuthor({ name: 'Thao tác thành công', iconURL: 'https://cdn-icons-png.flaticon.com/512/190/190411.png' });
 
     if (fields && Array.isArray(fields)) {
         fields.forEach(field => {
@@ -79,7 +84,9 @@ export function successEmbed(title, description, fields = null) {
 export function errorEmbed(title, description, fields = null) {
     const embed = createBaseEmbed(COLORS.ERROR)
         .setTitle(`${ICONS.ERROR} ${title}`)
-        .setDescription(description);
+        .setDescription(`> ${description}`)
+        .setThumbnail('https://cdn-icons-png.flaticon.com/512/148/148766.png') // Cross mark 3D
+        .setAuthor({ name: 'Đã xảy ra lỗi', iconURL: 'https://cdn-icons-png.flaticon.com/512/595/595067.png' });
 
     if (fields && Array.isArray(fields)) {
         fields.forEach(field => {
@@ -100,7 +107,9 @@ export function errorEmbed(title, description, fields = null) {
 export function warningEmbed(title, description, fields = null) {
     const embed = createBaseEmbed(COLORS.WARNING)
         .setTitle(`${ICONS.WARNING} ${title}`)
-        .setDescription(description);
+        .setDescription(`> ${description}`)
+        .setThumbnail('https://cdn-icons-png.flaticon.com/512/1055/1055644.png') // Warning 3D
+        .setAuthor({ name: 'Cảnh báo hệ thống', iconURL: 'https://cdn-icons-png.flaticon.com/512/4201/4201973.png' });
 
     if (fields && Array.isArray(fields)) {
         fields.forEach(field => {
@@ -121,7 +130,9 @@ export function warningEmbed(title, description, fields = null) {
 export function infoEmbed(title, description, fields = null) {
     const embed = createBaseEmbed(COLORS.INFO)
         .setTitle(`${ICONS.INFO} ${title}`)
-        .setDescription(description);
+        .setDescription(description)
+        .setThumbnail('https://cdn-icons-png.flaticon.com/512/1055/1055646.png') // Info 3D
+        .setAuthor({ name: 'Thông tin', iconURL: 'https://cdn-icons-png.flaticon.com/512/471/471662.png' });
 
     if (fields && Array.isArray(fields)) {
         fields.forEach(field => {
