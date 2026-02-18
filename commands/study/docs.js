@@ -12,7 +12,7 @@ export default {
                 .setDescription('Thêm tài liệu mới')
                 .addStringOption(option => option.setName('title').setDescription('Tên tài liệu').setRequired(true))
                 .addStringOption(option => option.setName('url').setDescription('Link tài liệu').setRequired(true))
-                .addStringOption(option => option.setName('subject').setDescription('Môn học (Toán, Lý, IT...)').setRequired(true))
+                .addStringOption(option => option.setName('subject').setDescription('Môn học (Toán, Lý, IT...)').setRequired(true).setAutocomplete(true))
                 .addStringOption(option => option.setName('description').setDescription('Mô tả thêm')))
         .addSubcommand(subcommand =>
             subcommand
@@ -23,12 +23,31 @@ export default {
             subcommand
                 .setName('list')
                 .setDescription('Xem danh sách tài liệu theo môn (Chọn từ Menu)')
-                .addStringOption(option => option.setName('subject').setDescription('Môn học').setRequired(true)))
+                .addStringOption(option => option.setName('subject').setDescription('Môn học').setRequired(true).setAutocomplete(true)))
         .addSubcommand(subcommand =>
             subcommand
                 .setName('delete')
                 .setDescription('Xóa tài liệu (ID lấy từ lệnh search/list)')
                 .addStringOption(option => option.setName('id').setDescription('ID tài liệu').setRequired(true))),
+
+    async autocomplete(interaction) {
+        const focusedValue = interaction.options.getFocused();
+        const guildId = interaction.guild.id;
+        
+        // Lấy danh sách môn học từ DB
+        const subjects = await getSubjects(guildId);
+        
+        // Thêm các môn mặc định nếu DB trống hoặc để gợi ý ban đầu
+        const defaultSubjects = ['Toán', 'Lý', 'Hóa', 'Văn', 'Anh', 'Tin Học', 'Lịch Sử', 'Địa Lý'];
+        const uniqueSubjects = [...new Set([...subjects, ...defaultSubjects])];
+
+        const filtered = uniqueSubjects.filter(choice => choice.toLowerCase().includes(focusedValue.toLowerCase()));
+        
+        // Discord cho phép tối đa 25 lựa chọn
+        await interaction.respond(
+            filtered.slice(0, 25).map(choice => ({ name: choice, value: choice })),
+        );
+    },
 
     async execute(interaction) {
         const subcommand = interaction.options.getSubcommand();
