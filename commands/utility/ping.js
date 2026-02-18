@@ -1,35 +1,75 @@
 import { SlashCommandBuilder } from 'discord.js';
-import { infoEmbed } from '../../utils/embedBuilder.js';
+import { infoEmbed, ICONS, COLORS } from '../../utils/embedBuilder.js';
+import { getMemoryUsage, getUptime, getSystemInfo } from '../../utils/performance.js';
 
 export default {
     data: new SlashCommandBuilder()
         .setName('ping')
-        .setDescription('Kiểm tra độ trễ của bot'),
+        .setDescription('Xem trạng thái hệ thống và độ trễ (Dashboard)'),
 
     async execute(interaction) {
         const startTime = Date.now();
         
-        // Tính latency
-        await interaction.reply({ 
-            content: '🏓 Đang kiểm tra...',
+        // Reply placeholder
+        const msg = await interaction.reply({ 
+            content: '🔍 Đang phân tích hệ thống...',
             withResponse: true
         });
         
+        // Calculate metrics
         const roundtripLatency = Date.now() - startTime;
-        const websocketLatency = interaction.client.ws.ping;
+        const wsLatency = interaction.client.ws.ping;
+        const memory = getMemoryUsage();
+        const uptime = getUptime(process.uptime());
+        const sysInfo = getSystemInfo();
 
-        // Format websocket latency (nếu -1 thì đang chờ heartbeat)
-        const wsLatency = websocketLatency === -1 
-            ? 'Đang đo...' 
-            : `${websocketLatency}ms`;
+        const wsLatencyText = wsLatency === -1 ? 'N/A' : `${wsLatency}ms`;
+        
+        // Determine status indicator
+        let statusColor = COLORS.SUCCESS;
+        let statusText = '🟢 Ổn định';
+        
+        if (wsLatency > 200 || roundtripLatency > 500) {
+            statusColor = COLORS.WARNING;
+            statusText = '⚠️ Hơi lag';
+        }
+        if (wsLatency > 500 || roundtripLatency > 1000) {
+            statusColor = COLORS.ERROR;
+            statusText = '🔴 Mạng chậm';
+        }
 
-        // Update với embed đẹp
+        // Build Dashboard Embed
+        const embed = infoEmbed(`${ICONS.STATS} System Status`, `Trạng thái: **${statusText}**`)
+            .setColor(statusColor)
+            .addFields(
+                { 
+                    name: '📶 Network', 
+                    value: `> **API:** \`${roundtripLatency}ms\`\n> **WebSocket:** \`${wsLatencyText}\``, 
+                    inline: true 
+                },
+                { 
+                    name: '💻 Memory', 
+                    value: `> **Heap:** \`${memory.heapUsed}/${memory.heapTotal} MB\`\n> **RSS:** \`${memory.rss} MB\``, 
+                    inline: true 
+                },
+                { 
+                    name: '⏱️ Uptime', 
+                    value: `> \`${uptime}\``, 
+                    inline: true 
+                },
+                { 
+                    name: '⚙️ System', 
+                    value: `> Node: \`${sysInfo.nodeVersion}\`\n> OS: \`${sysInfo.platform}\``, 
+                    inline: true 
+                }
+            )
+            .setFooter({ text: `Bot Version 1.0.0 • ${sysInfo.cpuModel}` })
+            .setTimestamp();
+
+        // Update reply
         await interaction.editReply({
             content: null,
-            embeds: [infoEmbed(
-                '🏓 Pong!',
-                `**Độ trễ phản hồi:** ${roundtripLatency}ms\n**Độ trễ kết nối:** ${wsLatency}`
-            )]
+            embeds: [embed]
         });
     }
 };
