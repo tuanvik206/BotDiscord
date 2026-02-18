@@ -56,7 +56,14 @@ export default {
                                '`/mute` - Timeout thành viên\n' +
                                '`/unmute` - Gỡ timeout\n' +
                                '`/slowmode` - Thiết lập slowmode\n' +
+                               '`/unmute` - Gỡ timeout\n' +
+                               '`/slowmode` - Thiết lập slowmode\n' +
                                '`/lock` - Khóa/mở khóa kênh',
+                        inline: false
+                    },
+                    {
+                        name: '🎓 Lớp Học',
+                        value: '`/poll` - Tạo bình chọn',
                         inline: false
                     },
                     {
@@ -129,6 +136,12 @@ function getCommandDetails(commandName) {
             syntax: '`/lock [channel:<#channel>] [reason:"Lý do"]`',
             example: '`/lock reason:"Đang có vấn đề"` - Chạy lại để mở khóa',
             permission: 'MANAGE_CHANNELS'
+        },
+        poll: {
+            description: 'Tạo cuộc bình chọn với các lựa chọn. Bot sẽ tự động thả reaction số.',
+            syntax: '`/poll question:"Câu hỏi" options:"Lựa chọn 1, Lựa chọn 2..."`',
+            example: '`/poll question:"Học bù vào thứ mấy?" options:"Thứ 7, Chủ Nhật, Thứ 2"`',
+            permission: 'MỌI NGƯỜI'
         }
     };
 
