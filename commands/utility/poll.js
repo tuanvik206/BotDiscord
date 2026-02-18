@@ -70,7 +70,35 @@ export default {
             return desc;
         };
 
-        // ... (Button creation logic remains the same)
+        // Tạo Buttons
+        const buttons = options.map((opt, index) => {
+            return new ButtonBuilder()
+                .setCustomId(`poll_opt_${index}`)
+                .setLabel(`${index + 1}. ${opt.substring(0, 75)}`)
+                .setStyle(ButtonStyle.Primary);
+        });
+
+        // Nút chức năng
+        const infoBtn = new ButtonBuilder()
+            .setCustomId('poll_info')
+            .setLabel('Ai đã vote?')
+            .setStyle(ButtonStyle.Secondary)
+            .setEmoji('❔');
+
+        const exportBtn = new ButtonBuilder()
+            .setCustomId('poll_export')
+            .setLabel('Xuất Excel')
+            .setStyle(ButtonStyle.Success)
+            .setEmoji('📊');
+
+        const endBtn = new ButtonBuilder()
+            .setCustomId('poll_end')
+            .setLabel('Kết thúc')
+            .setStyle(ButtonStyle.Danger);
+
+        // Rows
+        const row1 = new ActionRowBuilder().addComponents(buttons);
+        const row2 = new ActionRowBuilder().addComponents(infoBtn, exportBtn, endBtn);
 
         // Embed ban đầu
         const embed = infoEmbed(`📊 ${question}`, generateDescription())
