@@ -1,25 +1,137 @@
 # 🤖 Discord Bot Quản Lý Lớp Học
 
-Bot Discord với các lệnh moderation cơ bản để quản lý server lớp học.
+Bot Discord tinh gọn, tập trung vào quản lý dự án và các tiện ích lớp học.
 
 ## ✨ Tính Năng
 
-### 📋 Moderation Commands
+### 📁 Project Management Commands
 
 | Lệnh | Mô tả | Quyền yêu cầu |
 |------|-------|---------------|
-| `/ban` | Ban thành viên khỏi server | BAN_MEMBERS |
-| `/kick` | Kick thành viên khỏi server | KICK_MEMBERS |
-| `/unban` | Unban người dùng bằng ID | BAN_MEMBERS |
-| `/warn` | Cảnh báo thành viên | MODERATE_MEMBERS |
-| `/mute` | Timeout thành viên (mute) | MODERATE_MEMBERS |
-| `/unmute` | Gỡ timeout cho thành viên | MODERATE_MEMBERS |
-| `/slowmode` | Thiết lập slowmode cho kênh | MANAGE_CHANNELS |
-| `/lock` | Khóa/mở khóa kênh (toggle) | MANAGE_CHANNELS |
-| `/clear` | Xóa tin nhắn hàng loạt (1-100) | MANAGE_MESSAGES |
+| `/project create` | Tạo project với category và channels riêng | MANAGE_CHANNELS |
+| `/project list` | Xem danh sách tất cả projects | Không |
+| `/project info` | Xem thông tin chi tiết project | Không |
+| `/project add` | Thêm thành viên vào project | Leader hoặc MANAGE_CHANNELS |
+| `/project remove` | Xóa thành viên khỏi project | Leader hoặc MANAGE_CHANNELS |
+| `/project leave` | Rời khỏi project | Không (phải là member) |
+| `/project delete` | Xóa project hoàn toàn | Leader hoặc MANAGE_CHANNELS |
 
-### 📁 Project Management Commands
+### 📊 Utility Commands
 
+| Lệnh | Mô tả |
+|------|-------|
+| `/poll` | Tạo cuộc bình chọn chuyên nghiệp (có thời hạn, hiển thị % trực quan) |
+| `/ping` | Kiểm tra độ trễ của Bot |
+| `/help` | Hiển thị danh sách lệnh và hướng dẫn |
+| `/clear` | Xóa tin nhắn hàng loạt (1-100) |
+
+## 🚀 Cài Đặt
+
+### 1. Yêu Cầu
+
+- Node.js 16.9.0 trở lên
+- Discord Bot Token
+- Discord Application ID
+
+### 2. Tạo Discord Bot
+
+1. Truy cập [Discord Developer Portal](https://discord.com/developers/applications)
+2. Click **"New Application"** và đặt tên cho bot
+3. Vào tab **"Bot"** và click **"Add Bot"**
+4. Bật các **Privileged Gateway Intents**:
+   - ✅ Server Members Intent
+   - ✅ Message Content Intent
+5. Copy **Token** của bot
+
+### 3. Cài Đặt Dự Án
+
+```bash
+# Clone hoặc tải project về
+cd BotDiscord
+
+# Cài đặt dependencies
+npm install
+
+# Tạo file .env (nếu chưa có)
+# Thêm thông tin sau vào file .env:
+TOKEN=your_bot_token_here
+CLIENT_ID=your_application_id_here
+GUILD_ID=your_server_id_here
+SUPABASE_URL=your_supabase_url
+SUPABASE_KEY=your_supabase_key
+```
+
+### 4. Deploy Commands
+
+```bash
+# Deploy slash commands
+node deploy-commands.js
+```
+
+### 5. Chạy Bot
+
+```bash
+# Chạy bot
+node index.js
+```
+
+## 📖 Hướng Dẫn Sử Dụng
+
+### `/project create`
+Tạo project mới với category, text channel, voice channel và role riêng.
+
+**Cú pháp:**
+```
+/project create name:"Tên project" leader:@user [max_members:10]
+```
+
+### `/poll`
+Tạo cuộc bình chọn với nhiều tùy chọn và thời gian kết thúc.
+
+**Cú pháp:**
+```
+/poll question:"Câu hỏi" options:"Lựa chọn 1, Lựa chọn 2,..." duration:"24h"
+```
+
+### `/clear`
+Xóa tin nhắn hàng loạt trong kênh.
+
+**Cú pháp:**
+```
+/clear amount:10 [user:@user]
+```
+
+## 🛠️ Cấu Trúc Dự Án
+
+```
+BotDiscord/
+├── commands/
+│   ├── moderation/
+│   │   └── clear.js
+│   ├── project/
+│   │   └── project.js
+│   └── utility/
+│       ├── help.js
+│       ├── ping.js
+│       └── poll.js
+├── utils/
+│   ├── embedBuilder.js
+│   ├── permissions.js
+│   ├── database.js
+│   └── projectPermissions.js
+├── index.js
+├── deploy-commands.js
+├── package.json
+└── README.md
+```
+
+## 📄 License
+
+MIT License - Tự do sử dụng và chỉnh sửa
+
+---
+
+**Chúc bạn quản lý server thành công! 🎓✨**
 | Lệnh | Mô tả | Quyền yêu cầu |
 |------|-------|---------------|
 | `/project create` | Tạo project với category và channels riêng | MANAGE_CHANNELS |
