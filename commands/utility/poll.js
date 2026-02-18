@@ -7,22 +7,45 @@ export default {
         .setName('poll')
         .setDescription('Tạo cuộc bình chọn (Poll)')
         .addStringOption(option =>
-            option
-                .setName('question')
+            option.setName('question')
                 .setDescription('Câu hỏi bình chọn')
                 .setRequired(true)
         )
         .addStringOption(option =>
-            option
-                .setName('options')
+            option.setName('options')
                 .setDescription('Các lựa chọn (phân cách bằng dấu phẩy, tối đa 5)')
                 .setRequired(true)
+        )
+        .addStringOption(option =>
+            option.setName('duration')
+                .setDescription('Thời gian tồn tại (vd: 30m, 1h, 2d). Mặc định: 24h')
+                .setRequired(false)
         ),
 
     async execute(interaction) {
         const question = interaction.options.getString('question');
         const optionsString = interaction.options.getString('options');
+        const durationString = interaction.options.getString('duration') || '24h';
         
+        // Parse Duration (e.g., "10m", "2h", "1d")
+        const parseDuration = (str) => {
+            const regex = /^(\d+)([smhd])$/;
+            const match = str.match(regex);
+            if (!match) return 24 * 60 * 60 * 1000; // Default 24h if invalid
+            const value = parseInt(match[1]);
+            const unit = match[2];
+            switch (unit) {
+                case 's': return value * 1000;
+                case 'm': return value * 60 * 1000;
+                case 'h': return value * 60 * 60 * 1000;
+                case 'd': return value * 24 * 60 * 60 * 1000;
+                default: return 24 * 60 * 60 * 1000;
+            }
+        };
+
+        const durationMs = parseDuration(durationString);
+        const endTime = Date.now() + durationMs;
+
         // Tách options
         const options = optionsString.split(/[,|]/).map(opt => opt.trim()).filter(opt => opt.length > 0);
 
@@ -53,18 +76,17 @@ export default {
                 const votesForOption = Array.from(userVotes.values()).filter(v => v.optionIndex === index).length;
                 const percentage = totalVotes === 0 ? 0 : Math.round((votesForOption / totalVotes) * 100);
                 
-                // Tạo progress bar đẹp hơn: 🟩🟩🟩⬜⬜⬜⬜⬜⬜⬜
+                // Tạo progress bar đẹp hơn
                 const barLength = 10;
                 const filledChars = Math.round((percentage / 100) * barLength);
                 const emptyChars = barLength - filledChars;
                 
-                // Custom blocks
                 const filledBlock = '🟩'; 
                 const emptyBlock = '⬜';
                 const progressBar = filledBlock.repeat(filledChars) + emptyBlock.repeat(emptyChars);
 
                 desc += `${index + 1}️⃣ **${opt}**\n`;
-                desc += `> ${progressBar} \`${percentage}%\` • ${votesForOption} phiếu\n\n`; // Gộp dòng cho gọn
+                desc += `> ${progressBar} \`${percentage}%\` • ${votesForOption} phiếu\n\n`;
             });
 
             return desc;
@@ -103,42 +125,40 @@ export default {
         // Embed ban đầu
         const embed = infoEmbed(`📊 ${question}`, generateDescription())
             .setColor(0xFF7675) // Poll Color (Pinkish)
-            .setThumbnail('https://cdn-icons-png.flaticon.com/512/2620/2620549.png') // Poll Icon
+            .setThumbnail('https://cdn-icons-png.flaticon.com/512/2620/2620549.png')
             .setAuthor({ name: 'Hệ Thống Bình Chọn', iconURL: interaction.client.user.displayAvatarURL() })
             .addFields(
                 { name: '👥 Tổng phiếu', value: `\`${userVotes.size}\``, inline: true },
                 { name: '⏳ Trạng thái', value: '`🟢 Đang diễn ra`', inline: true },
-                { name: '📅 Kết thúc lúc', value: `<t:${Math.floor((Date.now() + 24*60*60*1000)/1000)}:R>`, inline: true }
+                { name: '📅 Kết thúc lúc', value: `<t:${Math.floor(endTime/1000)}:R>`, inline: true }
             )
             .setFooter({ text: `Tạo bởi ${interaction.user.tag}`, iconURL: interaction.user.displayAvatarURL() })
             .setTimestamp();
 
-        // Gửi tin nhắn (Direct reply instead of editReply)
+        // Gửi tin nhắn
         const message = await interaction.reply({
             embeds: [embed],
             components: [row1, row2],
-            fetchReply: true // Important to get the message object for collector
+            fetchReply: true
         });
 
         // Collector
         const collector = message.createMessageComponentCollector({
             componentType: ComponentType.Button,
-            time: 24 * 60 * 60 * 1000 // 24 giờ
+            time: durationMs
         });
 
         collector.on('collect', async i => {
             try {
-                // Xử lý nút Kết thúc (chủ poll hoặc Admin)
+                // Xử lý nút Kết thúc
                 if (i.customId === 'poll_end') {
                     const isAdmin = i.member.permissions.has(PermissionFlagsBits.Administrator);
                     if (i.user.id !== interaction.user.id && !isAdmin) {
                         return i.reply({ content: 'Chỉ người tạo poll hoặc Admin mới được kết thúc!', flags: 64 });
                     }
                     
-                    // Disable components
                     const disabledRow1 = ActionRowBuilder.from(row1);
                     disabledRow1.components.forEach(btn => btn.setDisabled(true));
-                    
                     const disabledRow2 = ActionRowBuilder.from(row2);
                     disabledRow2.components.forEach(btn => btn.setDisabled(true));
 
@@ -146,7 +166,7 @@ export default {
                         content: '🛑 **Cuộc bình chọn đã kết thúc!**',
                         components: [disabledRow1, disabledRow2]
                     });
-                    collector.stop();
+                    collector.stop('manual_end');
                     return;
                 }
 
@@ -163,10 +183,8 @@ export default {
 
                     await i.deferReply({ flags: 64 });
 
-                    // Tạo file Excel
+                    // Tạo workbook
                     const workbook = new ExcelJS.Workbook();
-                    
-                    // Sheet 1: Tổng hợp (Summary)
                     const locationSheet = workbook.addWorksheet('Thống kê');
                     locationSheet.columns = [
                         { header: 'Lựa chọn', key: 'option', width: 40 },
@@ -178,19 +196,12 @@ export default {
                     options.forEach((opt, index) => {
                         const count = Array.from(userVotes.values()).filter(v => v.optionIndex === index).length;
                         const percent = totalVotes === 0 ? 0 : ((count / totalVotes) * 100).toFixed(1) + '%';
-                        
-                        locationSheet.addRow({
-                            option: opt,
-                            count: count,
-                            percent: percent
-                        });
+                        locationSheet.addRow({ option: opt, count: count, percent: percent });
                     });
-
-                    locationSheet.addRow({}); // Dòng trống
+                    locationSheet.addRow({});
                     locationSheet.addRow({ option: 'Tổng cộng', count: totalVotes });
 
-                    // Sheet 2: Chi tiết (Details)
-                    const worksheet = workbook.addWorksheet('Chi tiết người vote');
+                    const worksheet = workbook.addWorksheet('Chi tiết');
                     worksheet.columns = [
                         { header: 'User ID', key: 'id', width: 20 },
                         { header: 'User Tag', key: 'tag', width: 30 },
@@ -198,14 +209,12 @@ export default {
                         { header: 'Thời gian', key: 'time', width: 20 }
                     ];
 
-                    // Cache user info để lấy tag
                     for (const [userId, data] of userVotes.entries()) {
                         let userTag = 'Unknown';
                         try {
                             const user = await interaction.client.users.fetch(userId);
                             userTag = user.tag;
                         } catch (e) {}
-
                         worksheet.addRow({
                             id: userId,
                             tag: userTag,
@@ -216,26 +225,20 @@ export default {
 
                     const buffer = await workbook.xlsx.writeBuffer();
                     const attachment = new AttachmentBuilder(buffer, { name: 'poll_results.xlsx' });
-
                     await i.editReply({ files: [attachment] });
                     return;
                 }
 
-                // Xử lý nút xem info
+                // Xử lý nút info
                 if (i.customId === 'poll_info') {
                     let info = '**Danh sách vote:**\n';
                     options.forEach((opt, index) => {
                         const voters = Array.from(userVotes.entries())
                             .filter(([uid, data]) => data.optionIndex === index)
                             .map(([uid]) => `<@${uid}>`);
-                        
-                        if (voters.length > 0) {
-                            info += `\n**${opt}:** ${voters.join(', ')}`;
-                        }
+                        if (voters.length > 0) info += `\n**${opt}:** ${voters.join(', ')}`;
                     });
-
                     if (userVotes.size === 0) info = 'Chưa có ai vote cả!';
-
                     return i.reply({ content: info, flags: 64 });
                 }
 
@@ -243,14 +246,13 @@ export default {
                 const selection = parseInt(i.customId.replace('poll_opt_', ''));
                 const userId = i.user.id;
                 const timestamp = Date.now();
-
-                 // Check if voted same option (Toggle off)
                 const currentVote = userVotes.get(userId);
+
                 if (currentVote && currentVote.optionIndex === selection) {
-                    userVotes.delete(userId); // Remove vote
+                    userVotes.delete(userId);
                     await i.reply({ content: 'Bạn đã hủy vote.', flags: 64 });
                 } else {
-                    userVotes.set(userId, { optionIndex: selection, timestamp }); // Set/Change vote
+                    userVotes.set(userId, { optionIndex: selection, timestamp });
                     await i.reply({ content: `Bạn đã vote cho: **${options[selection]}**`, flags: 64 });
                 }
 
@@ -260,10 +262,10 @@ export default {
                         .setColor(0xFF7675)
                         .setThumbnail('https://cdn-icons-png.flaticon.com/512/2620/2620549.png')
                         .setAuthor({ name: 'Hệ Thống Bình Chọn', iconURL: interaction.client.user.displayAvatarURL() })
-                        .setFields( // Dùng setFields để update lại toàn bộ fields
+                        .setFields(
                             { name: '👥 Tổng phiếu', value: `\`${userVotes.size}\``, inline: true },
                             { name: '⏳ Trạng thái', value: '`🟢 Đang diễn ra`', inline: true },
-                            { name: '📅 Kết thúc lúc', value: `<t:${Math.floor((Date.now() + 24*60*60*1000)/1000)}:R>`, inline: true }
+                            { name: '📅 Kết thúc lúc', value: `<t:${Math.floor(endTime/1000)}:R>`, inline: true }
                         )
                         .setFooter({ text: `Tạo bởi ${interaction.user.tag}`, iconURL: interaction.user.displayAvatarURL() })
                         .setTimestamp();
@@ -275,14 +277,27 @@ export default {
 
             } catch (error) {
                 console.error('Error in poll collector:', error);
-                if (!i.replied && !i.deferred) {
-                    await i.reply({ content: 'Đã xảy ra lỗi khi xử lý vote!', flags: 64 });
-                }
+                if (!i.replied && !i.deferred) await i.reply({ content: 'Lỗi xử lý vote!', flags: 64 });
             }
         });
 
-        collector.on('end', () => {
-             console.log('Poll collector ended');
+        collector.on('end', async (collected, reason) => {
+            if (reason === 'time') {
+                try {
+                    // Disable buttons when time is ups
+                    const disabledRow1 = ActionRowBuilder.from(row1);
+                    disabledRow1.components.forEach(btn => btn.setDisabled(true));
+                    const disabledRow2 = ActionRowBuilder.from(row2);
+                    disabledRow2.components.forEach(btn => btn.setDisabled(true));
+
+                    await interaction.editReply({
+                        content: '🛑 **Cuộc bình chọn đã kết thúc (Hết giờ)!**',
+                        components: [disabledRow1, disabledRow2]
+                    });
+                } catch (e) {
+                    console.error('Error ending poll automatically:', e);
+                }
+            }
         });
     }
 };
