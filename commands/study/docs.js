@@ -37,9 +37,8 @@ export default {
         // Lấy danh sách môn học từ DB
         const subjects = await getSubjects(guildId);
         
-        // Thêm các môn mặc định nếu DB trống hoặc để gợi ý ban đầu
-        const defaultSubjects = ['Toán', 'Lý', 'Hóa', 'Văn', 'Anh', 'Tin Học', 'Lịch Sử', 'Địa Lý'];
-        const uniqueSubjects = [...new Set([...subjects, ...defaultSubjects])];
+        // Chỉ hiện những môn đã có trong DB
+        const uniqueSubjects = [...new Set(subjects)];
 
         const filtered = uniqueSubjects.filter(choice => choice.toLowerCase().includes(focusedValue.toLowerCase()));
         
