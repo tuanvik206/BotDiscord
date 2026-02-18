@@ -103,7 +103,11 @@ async function handleViolation(message, type, reason) {
         const config = await loadConfig(guildId);
 
         // Xóa tin nhắn vi phạm
-        await message.delete().catch(() => {});
+        await message.delete().catch(err => {
+            console.error('Failed to delete message:', err);
+            // Gửi thông báo lỗi cho người vi phạm (tạm thời)
+            message.channel.send(`⚠️ **LỖI:** Bot không thể xóa tin nhắn vi phạm! (Mã lỗi: \`${err.code}: ${err.message}\`)`).catch(() => {});
+        });
 
         // Thêm warning
         const warningCount = await addWarning(
