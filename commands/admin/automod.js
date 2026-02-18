@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
-import { successEmbed, errorEmbed, infoEmbed, COLORS } from '../../utils/embedBuilder.js';
+import { customEmbed, successEmbed, errorEmbed, infoEmbed, COLORS, ICONS } from '../../utils/embedBuilder.js';
 import { hasPermission } from '../../utils/permissions.js';
 import { 
     getConfig, 
@@ -16,8 +16,9 @@ export default {
         .addSubcommand(subcommand =>
             subcommand
                 .setName('status')
-                .setDescription('Xem trạng thái auto-moderation')
+                .setDescription('Xem Dashboard trạng thái auto-moderation')
         )
+        // ... (Other subcommands remain same)
         .addSubcommand(subcommand =>
             subcommand
                 .setName('toggle')
@@ -92,61 +93,30 @@ export default {
 async function handleStatus(interaction) {
     const config = await getConfig(interaction.guild.id);
 
-    const statusEmbed = infoEmbed(
-        '⚙️ Auto-Moderation Status',
-        'Trạng thái các module auto-moderation:',
-        [
+    const statusEmbed = customEmbed({
+        title: `${ICONS.SETTINGS} Auto-Moderation Dashboard`,
+        description: 'Tổng quan trạng thái hệ thống bảo vệ server.',
+        color: COLORS.PRIMARY,
+        thumbnail: 'https://cdn-icons-png.flaticon.com/512/9350/9350318.png', // Shield Icon
+        fields: [
             {
-                name: '🚫 Spam Detection',
-                value: config.spam.enabled ? '✅ Enabled' : '❌ Disabled',
+                name: '🛡️ Modules Status',
+                value: `> **Spam:** ${config.spam.enabled ? '🟢 ON' : '🔴 OFF'}\n` +
+                       `> **Links:** ${config.links.enabled ? '🟢 ON' : '🔴 OFF'}\n` +
+                       `> **Bad Words:** ${config.profanity.enabled ? '🟢 ON' : '🔴 OFF'}\n` +
+                       `> **Warns:** ${config.warnings.enabled ? '🟢 ON' : '🔴 OFF'}`,
                 inline: true
             },
             {
-                name: '🔗 Link Filter',
-                value: config.links.enabled ? '✅ Enabled' : '❌ Disabled',
-                inline: true
-            },
-            {
-                name: '🤬 Profanity Filter',
-                value: config.profanity.enabled ? '✅ Enabled' : '❌ Disabled',
-                inline: true
-            },
-            {
-                name: '⚠️ Warning System',
-                value: config.warnings.enabled ? '✅ Enabled' : '❌ Disabled',
-                inline: true
-            },
-            {
-                name: '📊 Logging',
-                value: config.logging.enabled ? '✅ Enabled' : '❌ Disabled',
-                inline: true
-            },
-            {
-                name: '\u200b',
-                value: '\u200b',
-                inline: true
-            },
-            {
-                name: '⚙️ Spam Config',
-                value: `Max Messages: ${config.spam.maxMessages}\n` +
-                       `Time Window: ${config.spam.timeWindow / 1000}s\n` +
-                       `Max Duplicates: ${config.spam.maxDuplicates}`,
-                inline: true
-            },
-            {
-                name: '⚙️ Link Config',
-                value: `Block Invites: ${config.links.blockInvites ? 'Yes' : 'No'}\n` +
-                       `Block Shorteners: ${config.links.blockShorteners ? 'Yes' : 'No'}`,
-                inline: true
-            },
-            {
-                name: '⚙️ Profanity Config',
-                value: `Filter Level: ${config.profanity.filterLevel}\n` +
-                       `Detect Bypass: ${config.profanity.detectBypass ? 'Yes' : 'No'}`,
+                name: '⚙️ Configurations',
+                value: `> **Spam:** \`${config.spam.maxMessages} msg / ${config.spam.timeWindow/1000}s\`\n` +
+                       `> **Bad Words Level:** \`${config.profanity.filterLevel}\`\n` +
+                       `> **Logging:** ${config.logging.enabled ? '✅' : '❌'}`,
                 inline: true
             }
-        ]
-    );
+        ],
+        footer: { text: `Security Level: High • ${interaction.guild.name}`, iconURL: interaction.guild.iconURL() }
+    });
 
     await interaction.reply({ embeds: [statusEmbed] });
 }
@@ -159,7 +129,8 @@ async function handleToggle(interaction) {
     config[module].enabled = !config[module].enabled;
     await updateConfig(interaction.guild.id, config);
 
-    const status = config[module].enabled ? 'Enabled ✅' : 'Disabled ❌';
+    const isEnabled = config[module].enabled;
+    const statusText = isEnabled ? 'Đã BẬT 🟢' : 'Đã TẮT 🔴';
     const moduleName = {
         'spam': '🚫 Spam Detection',
         'links': '🔗 Link Filter',
@@ -168,10 +139,12 @@ async function handleToggle(interaction) {
     }[module];
 
     await interaction.reply({
-        embeds: [successEmbed(
-            'Module Updated',
-            `${moduleName} đã được ${status}`
-        )]
+        embeds: [customEmbed({
+            title: `${ICONS.SETTINGS} Cập nhật cấu hình`,
+            description: `Module **${moduleName}** hiện tại: **${statusText}**`,
+            color: isEnabled ? COLORS.SUCCESS : COLORS.ERROR,
+            footer: { text: `Admin: ${interaction.user.tag}`, iconURL: interaction.user.displayAvatarURL() }
+        })]
     });
 }
 
@@ -181,9 +154,9 @@ async function handleWarnings(interaction) {
 
     if (!warnings || warnings.totalWarnings === 0) {
         return interaction.reply({
-            embeds: [infoEmbed(
-                'No Warnings',
-                `${user} chưa có warnings nào.`
+            embeds: [successEmbed(
+                'Hồ sơ sạch',
+                `User ${user} chưa có cảnh báo nào! 🎉`
             )],
             flags: 64
         });
@@ -192,15 +165,21 @@ async function handleWarnings(interaction) {
     const warningList = warnings.warnings
         .slice(-5) // Lấy 5 warnings gần nhất
         .map((w, i) => {
-            const date = new Date(w.timestamp).toLocaleString('vi-VN');
-            return `**${i + 1}.** ${w.type} - ${w.reason}\n*${date}*`;
+            const date = Math.floor(new Date(w.timestamp).getTime() / 1000);
+            return `**${i + 1}.** \`${w.type}\` • ${w.reason}\n🕒 <t:${date}:R>`;
         })
         .join('\n\n');
 
-    const embed = infoEmbed(
-        `⚠️ Warnings: ${user.tag}`,
-        `**Total Warnings:** ${warnings.totalWarnings}/5\n\n${warningList}`
-    );
+    const embed = customEmbed({
+        title: `⚠️ Lịch sử cảnh báo: ${user.tag}`,
+        color: COLORS.WARNING,
+        thumbnail: user.displayAvatarURL(),
+        fields: [
+            { name: '📊 Tổng số lần bị warn', value: `\`${warnings.totalWarnings}/5\``, inline: true },
+            { name: '📝 Danh sách gần nhất', value: warningList || 'Không có dữ liệu', inline: false }
+        ],
+        footer: { text: 'Auto-Moderation System' }
+    });
 
     await interaction.reply({ embeds: [embed], flags: 64 });
 }
@@ -212,15 +191,15 @@ async function handleReset(interaction) {
     if (result) {
         await interaction.reply({
             embeds: [successEmbed(
-                'Warnings Reset',
-                `Đã reset tất cả warnings của ${user}`
+                'Reset thành công',
+                `Đã xóa toàn bộ cảnh báo của ${user}. Hồ sơ đã sạch!`
             )]
         });
     } else {
         await interaction.reply({
             embeds: [errorEmbed(
-                'No Warnings',
-                `${user} không có warnings để reset.`
+                'Không thể reset',
+                `${user} không có cảnh báo nào để xóa.`
             )],
             flags: 64
         });
@@ -229,13 +208,18 @@ async function handleReset(interaction) {
 
 async function handleWhitelist(interaction) {
     const whitelist = getWhitelist(interaction.guild.id);
+    const list = whitelist.length > 0 
+        ? whitelist.map((domain, i) => `**${i + 1}.** \`${domain}\``).join('\n')
+        : '_Danh sách trống_';
 
-    const list = whitelist.map((domain, i) => `${i + 1}. \`${domain}\``).join('\n');
-
-    const embed = infoEmbed(
-        '🔗 Whitelist Domains',
-        `Danh sách ${whitelist.length} domains được phép:\n\n${list}`
-    );
+    const embed = customEmbed({
+        title: '🔗 Whitelist Domains',
+        description: 'Các tên miền được phép gửi link trong server.',
+        color: COLORS.INFO,
+        fields: [
+            { name: 'Danh sách', value: list }
+        ]
+    });
 
     await interaction.reply({ embeds: [embed], flags: 64 });
 }
