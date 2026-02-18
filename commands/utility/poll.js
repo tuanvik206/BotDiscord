@@ -20,18 +20,6 @@ export default {
         ),
 
     async execute(interaction) {
-        try {
-            await interaction.deferReply();
-        } catch (error) {
-            // Error 10062: Unknown interaction (Took too long > 3s or network issue)
-            // Error 40060: Interaction already acknowledged
-            if (error.code === 10062 || error.code === 40060) {
-                console.warn(`⚠️ Interaction failed for /poll: ${error.message} (Network lag or timeout)`);
-                return; // Stop execution, cannot reply anymore
-            }
-            throw error; // Rethrow other errors
-        }
-
         const question = interaction.options.getString('question');
         const optionsString = interaction.options.getString('options');
         
@@ -40,14 +28,16 @@ export default {
 
         // Validate
         if (options.length < 2) {
-            return interaction.editReply({
-                embeds: [errorEmbed('Lỗi', 'Cần ít nhất 2 lựa chọn!')]
+            return interaction.reply({
+                embeds: [errorEmbed('Lỗi', 'Cần ít nhất 2 lựa chọn!')],
+                flags: 64
             });
         }
 
         if (options.length > 5) {
-            return interaction.editReply({
-                embeds: [errorEmbed('Lỗi', 'Với Button Poll, tối đa chỉ được 5 lựa chọn! (Discord giới hạn 1 hàng)')]
+            return interaction.reply({
+                embeds: [errorEmbed('Lỗi', 'Với Button Poll, tối đa chỉ được 5 lựa chọn! (Discord giới hạn 1 hàng)')],
+                flags: 64
             });
         }
 
@@ -112,10 +102,11 @@ export default {
             .setFooter({ text: `Tạo bởi ${interaction.user.tag} • Bấm nút để bình chọn!` })
             .setTimestamp();
 
-        // Gửi tin nhắn
-        const message = await interaction.editReply({
+        // Gửi tin nhắn (Direct reply instead of editReply)
+        const message = await interaction.reply({
             embeds: [embed],
-            components: [row1, row2]
+            components: [row1, row2],
+            fetchReply: true // Important to get the message object for collector
         });
 
         // Collector
