@@ -7,22 +7,30 @@ config();
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
 
-if (!supabaseUrl || !supabaseKey) {
-    throw new Error('❌ Missing Supabase credentials! Check .env file.');
+// Create Supabase client with optimized settings
+let supabase = null;
+
+if (supabaseUrl && supabaseKey) {
+    try {
+        supabase = createClient(supabaseUrl, supabaseKey, {
+            db: {
+                schema: 'public'
+            },
+            auth: {
+                persistSession: false // Bot doesn't need session persistence
+            },
+            global: {
+                headers: { 'x-application-name': 'discord-bot' }
+            }
+        });
+    } catch (error) {
+        console.error('⚠️ Failed to initialize Supabase client:', error.message);
+    }
+} else {
+    console.warn('⚠️ Accessing Supabase features without credentials! Database features will be disabled.');
 }
 
-// Create Supabase client with optimized settings
-export const supabase = createClient(supabaseUrl, supabaseKey, {
-    db: {
-        schema: 'public'
-    },
-    auth: {
-        persistSession: false // Bot doesn't need session persistence
-    },
-    global: {
-        headers: { 'x-application-name': 'discord-bot' }
-    }
-});
+export { supabase };
 
 // Test connection
 export async function testConnection() {
