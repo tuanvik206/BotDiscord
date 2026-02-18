@@ -64,12 +64,9 @@ export default {
                 const progressBar = filledBlock.repeat(filledChars) + emptyBlock.repeat(emptyChars);
 
                 desc += `${index + 1}️⃣ **${opt}**\n`;
-                desc += `> ${progressBar} **${percentage}%** \`(${votesForOption} phiếu)\`\n\n`;
+                desc += `> ${progressBar} \`${percentage}%\` • ${votesForOption} phiếu\n\n`; // Gộp dòng cho gọn
             });
 
-            desc += `━━━━━━━━━━━━━━━━━━━━━\n`;
-            desc += `👥 **Tổng số phiếu:** \`${totalVotes}\`\n`;
-            desc += `⏳ **Trạng thái:** Đang diễn ra...`;
             return desc;
         };
 
@@ -80,7 +77,12 @@ export default {
             .setColor(0xFF7675) // Poll Color (Pinkish)
             .setThumbnail('https://cdn-icons-png.flaticon.com/512/2620/2620549.png') // Poll Icon
             .setAuthor({ name: 'Hệ Thống Bình Chọn', iconURL: interaction.client.user.displayAvatarURL() })
-            .setFooter({ text: `Được tạo bởi ${interaction.user.tag}`, iconURL: interaction.user.displayAvatarURL() })
+            .addFields(
+                { name: '👥 Tổng phiếu', value: `\`${userVotes.size}\``, inline: true },
+                { name: '⏳ Trạng thái', value: '`🟢 Đang diễn ra`', inline: true },
+                { name: '📅 Kết thúc lúc', value: `<t:${Math.floor((Date.now() + 24*60*60*1000)/1000)}:R>`, inline: true }
+            )
+            .setFooter({ text: `Tạo bởi ${interaction.user.tag}`, iconURL: interaction.user.displayAvatarURL() })
             .setTimestamp();
 
         // Gửi tin nhắn (Direct reply instead of editReply)
@@ -227,7 +229,15 @@ export default {
                 // Update Embed
                 try {
                     const newEmbed = infoEmbed(`📊 ${question}`, generateDescription())
-                        .setFooter({ text: `Tạo bởi ${interaction.user.tag} • Bấm nút để bình chọn!` })
+                        .setColor(0xFF7675)
+                        .setThumbnail('https://cdn-icons-png.flaticon.com/512/2620/2620549.png')
+                        .setAuthor({ name: 'Hệ Thống Bình Chọn', iconURL: interaction.client.user.displayAvatarURL() })
+                        .setFields( // Dùng setFields để update lại toàn bộ fields
+                            { name: '👥 Tổng phiếu', value: `\`${userVotes.size}\``, inline: true },
+                            { name: '⏳ Trạng thái', value: '`🟢 Đang diễn ra`', inline: true },
+                            { name: '📅 Kết thúc lúc', value: `<t:${Math.floor((Date.now() + 24*60*60*1000)/1000)}:R>`, inline: true }
+                        )
+                        .setFooter({ text: `Tạo bởi ${interaction.user.tag}`, iconURL: interaction.user.displayAvatarURL() })
                         .setTimestamp();
                     
                     await interaction.editReply({ embeds: [newEmbed] });
