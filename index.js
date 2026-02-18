@@ -111,6 +111,13 @@ client.on(Events.InteractionCreate, async (interaction) => {
         await command.execute(interaction);
         console.log(`✅ ${interaction.user.tag} used /${interaction.commandName} in ${interaction.guild.name}`);
     } catch (error) {
+        // Ignore "Interaction has already been acknowledged" error (Code 40060)
+        // This happens mostly due to network lag causing Discord to retry events, or double handling.
+        if (error.code === 40060 || error.message.includes('Interaction has already been acknowledged')) {
+             console.warn(`⚠️ Interaction already acknowledged for /${interaction.commandName}. This is safe to ignore.`);
+             return;
+        }
+
         console.error(`❌ Error executing ${interaction.commandName}:`, error);
         
         const errorMessage = {
@@ -119,13 +126,13 @@ client.on(Events.InteractionCreate, async (interaction) => {
         };
 
         try {
-            if (interaction.deferred) {
-                await interaction.editReply(errorMessage);
-            } else if (!interaction.replied) {
-                await interaction.reply(errorMessage);
+            if (interaction.replied || interaction.deferred) {
+                await interaction.followUp(errorMessage).catch(() => {});
+            } else {
+                await interaction.reply(errorMessage).catch(() => {});
             }
         } catch (err) {
-            console.error('❌ Discord client error:', err);
+            // Ignore cascading errors
         }
     }
 });

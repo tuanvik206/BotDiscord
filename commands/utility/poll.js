@@ -19,7 +19,15 @@ export default {
         ),
 
     async execute(interaction) {
-        await interaction.deferReply();
+        // Safety check: Defer only if not already deferred/replied
+        if (!interaction.deferred && !interaction.replied) {
+            try {
+                await interaction.deferReply();
+            } catch (error) {
+                if (error.code === 40060) return; // Already acknowledged, safe to proceed
+                throw error;
+            }
+        }
 
         const question = interaction.options.getString('question');
         const optionsString = interaction.options.getString('options');
