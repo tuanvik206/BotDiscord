@@ -137,13 +137,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
 });
 
-// Auto-moderation
-client.on(Events.MessageCreate, async (message) => {
-    if (message.author.bot) return;
-    
-    const { handleAutomod } = await import('./utils/automod/automodHandler.js');
-    await handleAutomod(message);
-});
+// Auto-moderation handler removed as per request
+// client.on(Events.MessageCreate, async (message) => { ... });
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
