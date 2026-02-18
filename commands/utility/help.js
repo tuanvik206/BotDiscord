@@ -138,10 +138,10 @@ function getCommandDetails(commandName) {
             permission: 'MANAGE_CHANNELS'
         },
         poll: {
-            description: 'Tạo cuộc bình chọn với các nút bấm trực quan. Hỗ trợ xem người vote và kết quả real-time.',
+            description: 'Tạo cuộc bình chọn với nút bấm. Hỗ trợ xem người vote, xuất file Excel và phân quyền kết thúc.',
             syntax: '`/poll question:"Câu hỏi" options:"Lựa chọn 1, Lựa chọn 2..."`',
             example: '`/poll question:"Học bù vào thứ mấy?" options:"Thứ 7, Chủ Nhật, Thứ 2"`',
-            permission: 'MỌI NGƯỜI'
+            permission: 'MỌI NGƯỜI (Kết thúc/Xuất file: Chủ poll hoặc Admin)'
         }
     };
 

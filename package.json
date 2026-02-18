@@ -20,6 +20,8 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.95.3",
     "discord.js": "^14.14.1",
-    "dotenv": "^16.4.1"
+    "dotenv": "^16.4.1",
+    "exceljs": "^4.4.0",
+    "xlsx": "^0.18.5"
   }
 }

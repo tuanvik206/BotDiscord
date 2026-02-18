@@ -1,5 +1,6 @@
-import { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } from 'discord.js';
+import { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, PermissionFlagsBits, AttachmentBuilder } from 'discord.js';
 import { infoEmbed, errorEmbed } from '../../utils/embedBuilder.js';
+import ExcelJS from 'exceljs';
 
 export default {
     data: new SlashCommandBuilder()
@@ -48,9 +49,7 @@ export default {
             });
         }
 
-        // Data structure cho vote (Map<UserId, OptionIndex>)
-        // Lưu ý: Map này chỉ sống khi bot chạy. Nếu restart bot, vote cũ sẽ không tương tác được.
-        // Để persist cần database. Với scope hiện tại dùng In-Memory Map.
+        // Data structure cho vote (Map<UserId, {optionIndex, timestamp}>)
         const userVotes = new Map();
 
         // Hàm tạo nội dung hiển thị
@@ -59,7 +58,7 @@ export default {
             const totalVotes = userVotes.size;
 
             options.forEach((opt, index) => {
-                const votesForOption = Array.from(userVotes.values()).filter(v => v === index).length;
+                const votesForOption = Array.from(userVotes.values()).filter(v => v.optionIndex === index).length;
                 const percentage = totalVotes === 0 ? 0 : Math.round((votesForOption / totalVotes) * 100);
                 
                 // Tạo progress bar: ▓▓▓▓▓░░░░░
@@ -80,16 +79,22 @@ export default {
         const buttons = options.map((opt, index) => {
             return new ButtonBuilder()
                 .setCustomId(`poll_opt_${index}`)
-                .setLabel(`${index + 1}. ${opt.substring(0, 75)}`) // Giới hạn độ dài label
+                .setLabel(`${index + 1}. ${opt.substring(0, 75)}`)
                 .setStyle(ButtonStyle.Primary);
         });
 
-        // Nút xem info và kết thúc
+        // Nút chức năng
         const infoBtn = new ButtonBuilder()
             .setCustomId('poll_info')
             .setLabel('Ai đã vote?')
             .setStyle(ButtonStyle.Secondary)
             .setEmoji('❔');
+
+        const exportBtn = new ButtonBuilder()
+            .setCustomId('poll_export')
+            .setLabel('Xuất Excel')
+            .setStyle(ButtonStyle.Success)
+            .setEmoji('📊');
 
         const endBtn = new ButtonBuilder()
             .setCustomId('poll_end')
@@ -98,7 +103,7 @@ export default {
 
         // Rows
         const row1 = new ActionRowBuilder().addComponents(buttons);
-        const row2 = new ActionRowBuilder().addComponents(infoBtn, endBtn);
+        const row2 = new ActionRowBuilder().addComponents(infoBtn, exportBtn, endBtn);
 
         // Embed ban đầu
         const embed = infoEmbed(`📊 ${question}`, generateDescription())
@@ -118,74 +123,130 @@ export default {
         });
 
         collector.on('collect', async i => {
-            // Xử lý nút Kết thúc (chỉ người tạo poll)
-            if (i.customId === 'poll_end') {
-                if (i.user.id !== interaction.user.id) {
-                    return i.reply({ content: 'Chỉ người tạo poll mới được kết thúc!', flags: 64 });
-                }
-                
-                // Disable components
-                const disabledRow1 = ActionRowBuilder.from(row1);
-                disabledRow1.components.forEach(btn => btn.setDisabled(true));
-                
-                const disabledRow2 = ActionRowBuilder.from(row2);
-                disabledRow2.components.forEach(btn => btn.setDisabled(true));
-
-                await i.update({
-                    content: '🛑 **Cuộc bình chọn đã kết thúc!**',
-                    components: [disabledRow1, disabledRow2]
-                });
-                collector.stop();
-                return;
-            }
-
-            // Xử lý nút xem info
-            if (i.customId === 'poll_info') {
-                let info = '**Danh sách vote:**\n';
-                options.forEach((opt, index) => {
-                    const voters = Array.from(userVotes.entries())
-                        .filter(([uid, choice]) => choice === index)
-                        .map(([uid]) => `<@${uid}>`);
-                    
-                    if (voters.length > 0) {
-                        info += `\n**${opt}:** ${voters.join(', ')}`;
-                    }
-                });
-
-                if (userVotes.size === 0) info = 'Chưa có ai vote cả!';
-
-                return i.reply({ content: info, flags: 64 });
-            }
-
-            // Xử lý Vote
-            const selection = parseInt(i.customId.replace('poll_opt_', ''));
-            const userId = i.user.id;
-
-            // Check if voted same option (Toggle off)
-            if (userVotes.has(userId) && userVotes.get(userId) === selection) {
-                userVotes.delete(userId); // Remove vote
-                await i.reply({ content: 'Bạn đã hủy vote.', flags: 64 });
-            } else {
-                userVotes.set(userId, selection); // Set/Change vote
-                await i.reply({ content: `Bạn đã vote cho: **${options[selection]}**`, flags: 64 });
-            }
-
-            // Update Embed (không cần reply lại i, vì đã reply ephemeral ở trên)
-            // Cần update message gốc
             try {
-                const newEmbed = infoEmbed(`📊 ${question}`, generateDescription())
-                    .setFooter({ text: `Tạo bởi ${interaction.user.tag} • Bấm nút để bình chọn!` })
-                    .setTimestamp();
-                
-                await interaction.editReply({ embeds: [newEmbed] });
-            } catch (err) {
-                console.error('Error updating poll embed:', err);
+                // Xử lý nút Kết thúc (chủ poll hoặc Admin)
+                if (i.customId === 'poll_end') {
+                    const isAdmin = i.member.permissions.has(PermissionFlagsBits.Administrator);
+                    if (i.user.id !== interaction.user.id && !isAdmin) {
+                        return i.reply({ content: 'Chỉ người tạo poll hoặc Admin mới được kết thúc!', flags: 64 });
+                    }
+                    
+                    // Disable components
+                    const disabledRow1 = ActionRowBuilder.from(row1);
+                    disabledRow1.components.forEach(btn => btn.setDisabled(true));
+                    
+                    const disabledRow2 = ActionRowBuilder.from(row2);
+                    disabledRow2.components.forEach(btn => btn.setDisabled(true));
+
+                    await i.update({
+                        content: '🛑 **Cuộc bình chọn đã kết thúc!**',
+                        components: [disabledRow1, disabledRow2]
+                    });
+                    collector.stop();
+                    return;
+                }
+
+                // Xử lý xuất Excel
+                if (i.customId === 'poll_export') {
+                    const isAdmin = i.member.permissions.has(PermissionFlagsBits.Administrator);
+                    if (i.user.id !== interaction.user.id && !isAdmin) {
+                        return i.reply({ content: 'Chỉ người tạo poll hoặc Admin mới được xuất file!', flags: 64 });
+                    }
+
+                    if (userVotes.size === 0) {
+                        return i.reply({ content: 'Chưa có ai vote nên không thể xuất file!', flags: 64 });
+                    }
+
+                    await i.deferReply({ flags: 64 });
+
+                    // Tạo file Excel
+                    const workbook = new ExcelJS.Workbook();
+                    const worksheet = workbook.addWorksheet('Poll Results');
+
+                    worksheet.columns = [
+                        { header: 'User ID', key: 'id', width: 20 },
+                        { header: 'User Tag', key: 'tag', width: 30 },
+                        { header: 'Lựa chọn', key: 'choice', width: 40 },
+                        { header: 'Thời gian', key: 'time', width: 20 }
+                    ];
+
+                    // Cache user info để lấy tag
+                    for (const [userId, data] of userVotes.entries()) {
+                        let userTag = 'Unknown';
+                        try {
+                            const user = await interaction.client.users.fetch(userId);
+                            userTag = user.tag;
+                        } catch (e) {}
+
+                        worksheet.addRow({
+                            id: userId,
+                            tag: userTag,
+                            choice: options[data.optionIndex],
+                            time: new Date(data.timestamp).toLocaleString('vi-VN')
+                        });
+                    }
+
+                    const buffer = await workbook.xlsx.writeBuffer();
+                    const attachment = new AttachmentBuilder(buffer, { name: 'poll_results.xlsx' });
+
+                    await i.editReply({ files: [attachment] });
+                    return;
+                }
+
+                // Xử lý nút xem info
+                if (i.customId === 'poll_info') {
+                    let info = '**Danh sách vote:**\n';
+                    options.forEach((opt, index) => {
+                        const voters = Array.from(userVotes.entries())
+                            .filter(([uid, data]) => data.optionIndex === index)
+                            .map(([uid]) => `<@${uid}>`);
+                        
+                        if (voters.length > 0) {
+                            info += `\n**${opt}:** ${voters.join(', ')}`;
+                        }
+                    });
+
+                    if (userVotes.size === 0) info = 'Chưa có ai vote cả!';
+
+                    return i.reply({ content: info, flags: 64 });
+                }
+
+                // Xử lý Vote
+                const selection = parseInt(i.customId.replace('poll_opt_', ''));
+                const userId = i.user.id;
+                const timestamp = Date.now();
+
+                 // Check if voted same option (Toggle off)
+                const currentVote = userVotes.get(userId);
+                if (currentVote && currentVote.optionIndex === selection) {
+                    userVotes.delete(userId); // Remove vote
+                    await i.reply({ content: 'Bạn đã hủy vote.', flags: 64 });
+                } else {
+                    userVotes.set(userId, { optionIndex: selection, timestamp }); // Set/Change vote
+                    await i.reply({ content: `Bạn đã vote cho: **${options[selection]}**`, flags: 64 });
+                }
+
+                // Update Embed
+                try {
+                    const newEmbed = infoEmbed(`📊 ${question}`, generateDescription())
+                        .setFooter({ text: `Tạo bởi ${interaction.user.tag} • Bấm nút để bình chọn!` })
+                        .setTimestamp();
+                    
+                    await interaction.editReply({ embeds: [newEmbed] });
+                } catch (err) {
+                    console.error('Error updating poll embed:', err);
+                }
+
+            } catch (error) {
+                console.error('Error in poll collector:', error);
+                if (!i.replied && !i.deferred) {
+                    await i.reply({ content: 'Đã xảy ra lỗi khi xử lý vote!', flags: 64 });
+                }
             }
         });
 
         collector.on('end', () => {
-            // Cleanup nếu cần
-            console.log('Poll collector ended');
+             console.log('Poll collector ended');
         });
     }
 };
