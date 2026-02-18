@@ -20,14 +20,16 @@ export default {
         ),
 
     async execute(interaction) {
-        // Safety check: Defer only if not already deferred/replied
-        if (!interaction.deferred && !interaction.replied) {
-            try {
-                await interaction.deferReply();
-            } catch (error) {
-                if (error.code === 40060) return; // Already acknowledged, safe to proceed
-                throw error;
+        try {
+            await interaction.deferReply();
+        } catch (error) {
+            // Error 10062: Unknown interaction (Took too long > 3s or network issue)
+            // Error 40060: Interaction already acknowledged
+            if (error.code === 10062 || error.code === 40060) {
+                console.warn(`⚠️ Interaction failed for /poll: ${error.message} (Network lag or timeout)`);
+                return; // Stop execution, cannot reply anymore
             }
+            throw error; // Rethrow other errors
         }
 
         const question = interaction.options.getString('question');
